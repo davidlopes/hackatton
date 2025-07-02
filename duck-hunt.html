@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Duck Hunt Game</title>
+  <style>
+    /*
+      === Brand Color Palette ===
+      To change the game to match any brand, edit the variables below:
+      --brand-primary: main brand color (buttons, headings, main backgrounds)
+      --brand-accent: accent color (borders, highlights, beak, button hover)
+      --brand-bg: page background
+      --brand-bg-light: light backgrounds (inputs, cards)
+      --brand-gray: secondary gray (borders, wings, subtle backgrounds)
+      --brand-text: main text color
+      --brand-text-light: light text color (on dark backgrounds)
+    */
+    :root {
+      --brand-primary: #2596be;
+      --brand-accent: #96835d;
+      --brand-bg: #e9e9e9;
+      --brand-bg-light: #fff;
+      --brand-gray: #bdbcbc;
+      --brand-text: #222;
+      --brand-text-light: #fff;
+    }
+    body {
+      background: var(--brand-bg);
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      margin-top: 20px;
+      color: var(--brand-primary);
+      letter-spacing: 2px;
+    }
+    #gameArea {
+      position: relative;
+      width: 800px;
+      height: 400px;
+      background: var(--brand-primary);
+      border: 4px solid var(--brand-accent);
+      overflow: hidden;
+      margin-top: 20px;
+      box-shadow: 0 4px 16px rgba(37,150,190,0.12);
+    }
+    .duck {
+      position: absolute;
+      width: 60px;
+      height: 40px;
+      background: var(--brand-bg-light);
+      border-radius: 50% 50% 40% 40% / 60% 60% 40% 40%;
+      border: 2px solid var(--brand-primary);
+      cursor: crosshair;
+      box-shadow: 2px 2px 8px rgba(150,131,93,0.10);
+      transition: transform 0.1s;
+      z-index: 1;
+    }
+    .duck:active {
+      transform: scale(0.95);
+    }
+    .duck-tail {
+      position: absolute;
+      left: -16px;
+      top: 22px;
+      width: 18px;
+      height: 10px;
+      background: var(--brand-accent);
+      border-radius: 60% 40% 60% 40% / 60% 60% 40% 40%;
+      transform: rotate(-20deg);
+      opacity: 0.7;
+      z-index: 1;
+    }
+    .duck-wing {
+      position: absolute;
+      width: 32px;
+      height: 22px;
+      background: linear-gradient(120deg, var(--brand-gray) 60%, var(--brand-accent) 100%);
+      border-radius: 60% 60% 60% 60% / 80% 80% 60% 60%;
+      border: 1.5px solid var(--brand-accent);
+      opacity: 0.55;
+      transition: transform 0.15s;
+      z-index: 0;
+    }
+    .duck-wing.left {
+      left: -18px;
+      top: 10px;
+      transform: rotate(-40deg);
+    }
+    .duck-wing.left.flap {
+      transform: rotate(-90deg) scaleY(1.2);
+    }
+    .duck-wing.right {
+      left: 46px;
+      top: 10px;
+      transform: rotate(40deg) scaleX(-1);
+    }
+    .duck-wing.right.flap {
+      transform: rotate(90deg) scaleY(1.2) scaleX(-1);
+    }
+    .duck-body {
+      width: 60px;
+      height: 40px;
+      background: var(--brand-bg-light);
+      border-radius: 50% 50% 40% 40% / 60% 60% 40% 40%;
+      border: 2px solid var(--brand-primary);
+      position: absolute;
+      left: 0;
+      top: 0;
+      z-index: 3;
+      transition: transform 0.15s;
+    }
+    .duck-head {
+      position: absolute;
+      left: 44px;
+      top: 6px;
+      width: 26px;
+      height: 26px;
+      background: var(--brand-bg-light);
+      border-radius: 50%;
+      border: 2px solid var(--brand-primary);
+      z-index: 4;
+      box-shadow: 1px 1px 4px rgba(0,0,0,0.04);
+    }
+    .duck-beak {
+      position: absolute;
+      left: 22px;
+      top: 10px;
+      width: 14px;
+      height: 8px;
+      background: var(--brand-accent);
+      border-radius: 0 60% 60% 0 / 50% 50% 50% 50%;
+      transform: rotate(10deg);
+      z-index: 5;
+    }
+    .duck-eye {
+      position: absolute;
+      left: 16px;
+      top: 7px;
+      width: 7px;
+      height: 7px;
+      background: var(--brand-text);
+      border-radius: 50%;
+      z-index: 6;
+      border: 1px solid var(--brand-gray);
+    }
+    .duck.shot {
+      animation: duck-shot-spin 0.5s linear forwards;
+      z-index: 10;
+    }
+    @keyframes duck-shot-spin {
+      0% { transform: rotate(0deg) translateY(0); opacity: 1; }
+      60% { transform: rotate(360deg) translateY(20px); opacity: 1; }
+      100% { transform: rotate(720deg) translateY(120px); opacity: 0.2; }
+    }
+    #score {
+      font-size: 1.2em;
+      margin-top: 10px;
+      color: var(--brand-accent);
+      background: var(--brand-bg-light);
+      border-radius: 8px;
+      padding: 4px 18px;
+      border: 1px solid var(--brand-gray);
+      box-shadow: 0 2px 6px rgba(150,131,93,0.06);
+    }
+    #modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(34,34,34,0.35);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    #modal.active {
+      display: flex;
+    }
+    #modal-content {
+      min-width: 320px;
+      max-width: 90vw;
+      background: var(--brand-bg-light);
+      border-radius: 14px;
+      padding: 32px 36px 28px 36px;
+      border: 1.5px solid var(--brand-gray);
+      box-shadow: 0 8px 32px rgba(34,34,34,0.18);
+      text-align: center;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
+    #message {
+      font-size: 1.5em;
+      font-weight: bold;
+      color: var(--brand-primary);
+      background: none;
+      border: none;
+      box-shadow: none;
+      padding: 0;
+      margin: 0 0 8px 0;
+      border-radius: 0;
+      min-width: 0;
+      max-width: 100%;
+      display: block;
+    }
+    #voucherForm {
+      margin-top: 0;
+      background: none;
+      border: none;
+      box-shadow: none;
+      border-radius: 0;
+      padding: 0;
+      display: none;
+      width: 100%;
+    }
+    #voucherForm input, #voucherForm button {
+      margin-bottom: 8px;
+    }
+    #restartBtn {
+      margin-top: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Duck Hunt Game</h1>
+  <div id="score">Score: 0</div>
+  <div id="gameArea">
+    <div id="background-scene" style="position:absolute; left:0; top:0; width:100%; height:100%; z-index:0; pointer-events:none;">
+      <svg width="800" height="400" viewBox="0 0 800 400" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;">
+        <!-- Sky gradient -->
+        <defs>
+          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#b3e0ff"/>
+            <stop offset="100%" stop-color="#e9e9e9"/>
+          </linearGradient>
+          <linearGradient id="mountain1" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%" stop-color="#bdbcbc"/>
+            <stop offset="100%" stop-color="#fff"/>
+          </linearGradient>
+          <linearGradient id="mountain2" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%" stop-color="#96835d"/>
+            <stop offset="100%" stop-color="#bdbcbc"/>
+          </linearGradient>
+        </defs>
+        <!-- Sky -->
+        <rect x="0" y="0" width="800" height="400" fill="url(#sky)"/>
+        <!-- Mountains -->
+        <polygon points="0,400 120,220 300,340 500,180 700,320 800,250 800,400" fill="url(#mountain1)"/>
+        <polygon points="0,400 200,300 350,370 600,220 800,350 800,400" fill="url(#mountain2)" opacity="0.7"/>
+        <!-- Trees -->
+        <g>
+          <rect x="90" y="320" width="16" height="40" fill="#96835d"/>
+          <ellipse cx="98" cy="320" rx="28" ry="32" fill="#2596be"/>
+          <rect x="700" y="310" width="14" height="38" fill="#96835d"/>
+          <ellipse cx="707" cy="310" rx="24" ry="28" fill="#2596be"/>
+          <rect x="600" y="340" width="10" height="30" fill="#96835d"/>
+          <ellipse cx="605" cy="340" rx="18" ry="20" fill="#2596be"/>
+        </g>
+        <!-- Clouds -->
+        <g opacity="0.8">
+          <ellipse cx="180" cy="70" rx="40" ry="18" fill="#fff"/>
+          <ellipse cx="210" cy="80" rx="22" ry="12" fill="#fff"/>
+          <ellipse cx="600" cy="60" rx="36" ry="16" fill="#fff"/>
+          <ellipse cx="630" cy="70" rx="18" ry="10" fill="#fff"/>
+          <ellipse cx="400" cy="120" rx="30" ry="14" fill="#fff"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+  <div id="modal">
+    <div id="modal-content">
+      <div id="message"></div>
+      <div id="voucherForm">
+        <div style="display:flex; gap:8px; margin-bottom:8px;">
+          <input type="text" id="firstNameInput" placeholder="First Name" style="padding:8px; font-size:1em; border-radius:4px; border:1px solid #bdbcbc; width:180px;">
+          <input type="text" id="lastNameInput" placeholder="Last Name" style="padding:8px; font-size:1em; border-radius:4px; border:1px solid #bdbcbc; width:180px;">
+        </div>
+        <input type="email" id="emailInput" placeholder="Email" style="padding:8px; font-size:1em; border-radius:4px; border:1px solid #bdbcbc; margin-bottom:8px; width:376px; display:block;">
+        <button id="getVoucherBtn" type="button" style="padding:8px 16px; font-size:1em; border-radius:4px; background:var(--brand-primary); color:white; border:none; cursor:pointer; margin-left:8px;">Get Voucher</button>
+        <div id="emailError" style="color:#d32f2f; margin-top:8px; font-size:1em;"></div>
+      </div>
+      <button id="restartBtn">Restart Game</button>
+    </div>
+  </div>
+  <!-- Braze Web SDK -->
+  <script src="https://js.appboycdn.com/web-sdk/5.4/braze.no-module.min.js"></script>
+  <script>
+    // Initialize Braze as soon as the SDK is loaded
+    function initBraze() {
+      if (window.braze && typeof braze.initialize === 'function') {
+        braze.initialize('041edac0-fb97-46b3-bc4e-2dc5e402995f', { baseUrl: 'https://sdk.fra-02.braze.eu/api/v3', enableLogging: false });
+        braze.openSession();
+      }
+    }
+    if (window.braze) {
+      initBraze();
+    } else {
+      window.addEventListener('brazeSdkLoaded', initBraze);
+    }
+  </script>
+  <script>
+    const gameArea = document.getElementById('gameArea');
+    const scoreDisplay = document.getElementById('score');
+    const messageDisplay = document.getElementById('message');
+    const restartBtn = document.getElementById('restartBtn');
+    const voucherForm = document.getElementById('voucherForm');
+    const firstNameInput = document.getElementById('firstNameInput');
+    const lastNameInput = document.getElementById('lastNameInput');
+    const emailInput = document.getElementById('emailInput');
+    const getVoucherBtn = document.getElementById('getVoucherBtn');
+    const emailError = document.getElementById('emailError');
+
+    const DUCK_WAVES = [1, 2, 3, 4]; // 1+2+3+4 = 10 ducks
+    const DUCK_SPEED_MIN = 2; // px per frame
+    const DUCK_SPEED_MAX = 5;
+    const DUCK_HEIGHT = 40;
+    const DUCK_WIDTH = 60;
+    const GAME_WIDTH = 800;
+    const GAME_HEIGHT = 400;
+
+    let ducks = [];
+    let score = 0;
+    let ducksReleased = 0;
+    let ducksShot = 0;
+    let waveIndex = 0;
+    let gameActive = true;
+
+    function randomY() {
+      // Ensure duck stays within game area vertically
+      return Math.random() * (GAME_HEIGHT - DUCK_HEIGHT);
+    }
+
+    function randomSpeed() {
+      return DUCK_SPEED_MIN + Math.random() * (DUCK_SPEED_MAX - DUCK_SPEED_MIN);
+    }
+
+    function createDuck() {
+      const duck = document.createElement('div');
+      duck.className = 'duck';
+      // Add cartoon features
+      const tail = document.createElement('div');
+      tail.className = 'duck-tail';
+      duck.appendChild(tail);
+      const leftWing = document.createElement('div');
+      leftWing.className = 'duck-wing left';
+      duck.appendChild(leftWing);
+      const rightWing = document.createElement('div');
+      rightWing.className = 'duck-wing right';
+      duck.appendChild(rightWing);
+      const body = document.createElement('div');
+      body.className = 'duck-body';
+      duck.appendChild(body);
+      const head = document.createElement('div');
+      head.className = 'duck-head';
+      duck.appendChild(head);
+      const beak = document.createElement('div');
+      beak.className = 'duck-beak';
+      head.appendChild(beak);
+      const eye = document.createElement('div');
+      eye.className = 'duck-eye';
+      head.appendChild(eye);
+      const y = randomY();
+      duck.style.top = y + 'px';
+      duck.style.left = '-70px'; // Start just outside left
+      gameArea.appendChild(duck);
+      const speed = randomSpeed();
+      // Add a phase for bobbing so ducks don't all bob in sync
+      const bobPhase = Math.random() * Math.PI * 2;
+      const duckObj = {
+        el: duck,
+        leftWing: leftWing,
+        rightWing: rightWing,
+        body: body,
+        x: -70,
+        y: y,
+        baseY: y,
+        speed: speed,
+        alive: true,
+        bobPhase: bobPhase,
+        bobSpeed: 0.025 + Math.random() * 0.015 // slightly different bob speed
+      };
+      duck.addEventListener('click', function shootDuck(e) {
+        if (!duckObj.alive || !gameActive) return;
+        duckObj.alive = false;
+        duck.classList.add('shot');
+        duck.style.background = '#f44336'; // Red for shot
+        setTimeout(() => {
+          if (duck.parentNode) duck.parentNode.removeChild(duck);
+        }, 500);
+        score++;
+        ducksShot++;
+        updateScore();
+        checkWaveEnd();
+      });
+      ducks.push(duckObj);
+    }
+
+    function releaseWave(num) {
+      for (let i = 0; i < num; i++) {
+        createDuck();
+        ducksReleased++;
+      }
+    }
+
+    function updateScore() {
+      scoreDisplay.textContent = `Score: ${score}`;
+    }
+
+    let wingFlapTick = 0;
+    function animate() {
+      if (!gameActive) return;
+      wingFlapTick++;
+      for (let duck of ducks) {
+        if (!duck.alive) continue;
+        duck.x += duck.speed;
+        // Bobbing motion
+        const bob = Math.sin(duck.bobPhase + duck.x * duck.bobSpeed) * 10;
+        duck.el.style.left = duck.x + 'px';
+        duck.el.style.top = (duck.baseY + bob) + 'px';
+        // Slight body rotation for realism
+        if (duck.body) {
+          duck.body.style.transform = `rotate(${bob * 0.7}deg)`;
+        }
+        // Wing flapping
+        if (wingFlapTick % 8 < 4) {
+          duck.leftWing.classList.add('flap');
+          duck.rightWing.classList.add('flap');
+        } else {
+          duck.leftWing.classList.remove('flap');
+          duck.rightWing.classList.remove('flap');
+        }
+        if (duck.x > GAME_WIDTH) {
+          // Duck escaped
+          duck.alive = false;
+          if (duck.el.parentNode) duck.el.parentNode.removeChild(duck.el);
+          checkWaveEnd();
+        }
+      }
+      requestAnimationFrame(animate);
+    }
+
+    function checkWaveEnd() {
+      // If all ducks in current wave are dead or escaped, start next wave or end game
+      const aliveDucks = ducks.filter(d => d.alive);
+      if (aliveDucks.length === 0) {
+        waveIndex++;
+        if (waveIndex < DUCK_WAVES.length) {
+          setTimeout(() => {
+            releaseWave(DUCK_WAVES[waveIndex]);
+          }, 800);
+        } else if (ducksReleased >= 10) {
+          endGame();
+        }
+      }
+    }
+
+    function endGame() {
+      gameActive = false;
+      let prize = '';
+      let voucher = null;
+      if (score === 10) {
+        prize = '🏆 First Prize! You shot all 10 ducks!';
+        voucher = { value: '30€', code: 'POOL' };
+      } else if (score >= 8) {
+        prize = '🥈 Second Prize! You shot ' + score + ' ducks!';
+        voucher = { value: '20€', code: 'SPLASH' };
+      } else if (score >= 5) {
+        prize = '🥉 Third Prize! You shot ' + score + ' ducks!';
+        voucher = { value: '10€', code: 'SUMMER' };
+      } else {
+        prize = 'No prize. You shot ' + score + ' ducks. Try again!';
+      }
+      messageDisplay.innerHTML = prize;
+      if (prize) {
+        document.getElementById('modal').classList.add('active');
+      } else {
+        document.getElementById('modal').classList.remove('active');
+      }
+      if (voucher) {
+        voucherForm.style.display = 'block';
+        restartBtn.style.display = 'none';
+        firstNameInput.value = '';
+        lastNameInput.value = '';
+        emailInput.value = '';
+        emailError.textContent = '';
+        getVoucherBtn.onclick = function() {
+          const firstName = firstNameInput.value.trim();
+          const lastName = lastNameInput.value.trim();
+          const email = emailInput.value.trim();
+          if (!firstName) {
+            emailError.textContent = 'Please enter your first name.';
+            return;
+          }
+          if (!lastName) {
+            emailError.textContent = 'Please enter your last name.';
+            return;
+          }
+          if (!validateEmail(email)) {
+            emailError.textContent = 'Please enter a valid email address.';
+            return;
+          }
+          emailError.textContent = '';
+          // Send to Braze
+          if (window.braze && typeof braze.getUser === 'function') {
+            braze.changeUser(email);
+            braze.getUser().setFirstName(firstName);
+            braze.getUser().setLastName(lastName);
+            braze.getUser().setEmail(email);
+            braze.getUser().setCustomUserAttribute('voucher_code', voucher.code);
+            braze.logCustomEvent('game_voucher_won', { voucher_code: voucher.code });
+            braze.getUser().addToSubscriptionGroup('35ff8234-fa07-43b2-8f39-e1ce5ada3e35');
+            console.log('[Braze] Sent user:', { firstName, lastName, email, voucher_code: voucher.code });
+            braze.requestImmediateDataFlush();
+            console.log('[Braze] Data flush requested.');
+          } else {
+            console.warn('Braze SDK is not loaded or not ready.');
+          }
+          voucherForm.style.display = 'none';
+          messageDisplay.innerHTML = prize + `<br>🎁 Voucher: ${voucher.value}<br>Code: <b>${voucher.code}</b>`;
+          document.getElementById('modal').classList.add('active');
+          restartBtn.style.display = 'inline-block';
+        };
+      } else {
+        voucherForm.style.display = 'none';
+        restartBtn.style.display = 'inline-block';
+      }
+    }
+
+    function validateEmail(email) {
+      // Simple email validation
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function resetGame() {
+      // Remove all ducks
+      for (let duck of ducks) {
+        if (duck.el.parentNode) duck.el.parentNode.removeChild(duck.el);
+      }
+      ducks = [];
+      score = 0;
+      ducksReleased = 0;
+      ducksShot = 0;
+      waveIndex = 0;
+      gameActive = true;
+      messageDisplay.textContent = '';
+      document.getElementById('modal').classList.remove('active');
+      restartBtn.style.display = 'none';
+      voucherForm.style.display = 'none';
+      updateScore();
+      releaseWave(DUCK_WAVES[0]);
+      requestAnimationFrame(animate);
+    }
+
+    restartBtn.addEventListener('click', resetGame);
+
+    // Start game
+    resetGame();
+  </script>
+</body>
+</html> 
