@@ -276,25 +276,36 @@
       padding: 2px 16px;
       pointer-events: none;
     }
-    #gameHeader #score {
-      font-size: 1.2em;
-      color: var(--brand-accent);
-      background: var(--brand-bg-light);
-      border-radius: 8px;
-      padding: 4px 18px;
-      border: 1px solid var(--brand-gray);
-      box-shadow: 0 2px 6px rgba(150,131,93,0.06);
-      margin-bottom: 4px;
+    .score-background {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      min-width: 90px;
+      font-size: 1.3em;
+      color: var(--brand-primary);
+      background: rgba(255,255,255,0.65);
+      border-radius: 16px;
+      padding: 8px 22px 8px 22px;
+      border: 2px solid var(--brand-accent);
+      box-shadow: 0 2px 10px rgba(37,150,190,0.10);
+      z-index: 2;
       pointer-events: none;
+      font-weight: bold;
+      letter-spacing: 1px;
+      text-align: center;
+      transition: background 0.2s, color 0.2s;
     }
     @media (max-width: 600px) {
       #gameHeader h1 {
         font-size: 1.1em;
         padding: 2px 6px;
       }
-      #gameHeader #score {
+      .score-background {
         font-size: 1em;
-        padding: 2px 8px;
+        padding: 4px 10px 4px 10px;
+        top: 8px;
+        left: 8px;
+        min-width: 60px;
       }
     }
     #gameDescription {
@@ -328,8 +339,8 @@
   <div id="gameArea">
     <div id="gameHeader">
       <h1>Duck Hunt Game</h1>
-      <div id="score">Score: 0</div>
     </div>
+    <div id="score" class="score-background">Score: 0</div>
     <div id="gameDescription">
       Duck Hunt Game for Hackatton. Source: <a href="https://github.com/davidlopes/hackatton#" target="_blank" rel="noopener">github.com/davidlopes/hackatton</a>
     </div>
